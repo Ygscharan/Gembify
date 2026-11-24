@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Menu, PanelLeftOpen } from 'lucide-react';
-import { api } from './services/api.js';
+import { LogOut, Menu, PanelLeftOpen } from 'lucide-react';
+import {
+  api,
+  clearStoredToken,
+  getStoredToken,
+  setStoredToken,
+  setUnauthorizedHandler,
+} from './services/api.js';
 import { useTheme } from './hooks/useTheme.js';
 import Sidebar from './components/Sidebar.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
@@ -9,9 +15,13 @@ import AnalysisLoader from './components/AnalysisLoader.jsx';
 import ReportView from './components/ReportView.jsx';
 import NewConsultationModal from './components/NewConsultationModal.jsx';
 import GembifyMark from './components/GembifyMark.jsx';
+import LoginScreen from './components/LoginScreen.jsx';
 
 export default function App() {
   const { isAmoled, toggleTheme } = useTheme();
+
+  const [authChecking, setAuthChecking] = useState(true);
+  const [user, setUser] = useState(null);
 
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -30,7 +40,23 @@ export default function App() {
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [chatError, setChatError] = useState(null);
 
-  const fetchInitialData = useCallback(async () => {
+  const handleLogout = useCallback(() => {
+    clearStoredToken();
+    setUser(null);
+    setReports([]);
+    setActiveReport(null);
+    setAnalyzeError(null);
+    setChatError(null);
+    setNewModalOpen(false);
+    setMobileSidebarOpen(false);
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(handleLogout);
+    return () => setUnauthorizedHandler(null);
+  }, [handleLogout]);
+
+  const fetchAuthenticatedData = useCallback(async () => {
     try {
       const [healthRes, reportsRes] = await Promise.all([
         api.checkHealth().catch(() => null),
@@ -44,8 +70,45 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
+    let active = true;
+
+    async function verifySession() {
+      const token = getStoredToken();
+      if (!token) {
+        if (active) setAuthChecking(false);
+        return;
+      }
+
+      try {
+        const res = await api.getMe();
+        if (active && res?.user) {
+          setUser(res.user);
+        }
+      } catch {
+        clearStoredToken();
+        if (active) setUser(null);
+      } finally {
+        if (active) setAuthChecking(false);
+      }
+    }
+
+    verifySession();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchAuthenticatedData();
+    }
+  }, [user, fetchAuthenticatedData]);
+
+  const handleLogin = async (username, password) => {
+    const res = await api.login(username, password);
+    setStoredToken(res.token);
+    setUser(res.user);
+  };
 
   const handleSelectReport = async (reportId) => {
     if (activeReport?.id === reportId) return;
@@ -115,7 +178,6 @@ export default function App() {
     setChatError(null);
     setIsSendingChat(true);
 
-    // Atualização otimista da mensagem do usuário
     const tempUserId = `temp-${Date.now()}`;
     setActiveReport((prev) => {
       if (!prev || prev.id !== reportId) return prev;
@@ -148,7 +210,6 @@ export default function App() {
       }
     } catch (err) {
       setChatError(err.message || 'Falha ao enviar mensagem para o consultor.');
-      // Reverte mensagem otimista em caso de erro
       setActiveReport((prev) => {
         if (!prev || prev.id !== reportId) return prev;
         return {
@@ -173,6 +234,27 @@ export default function App() {
     }
   };
 
+  if (authChecking) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8FAFC] text-slate-900 dark:bg-[#000000] dark:text-zinc-100">
+        <GembifyMark size="xl" />
+        <p className="font-mono text-xs text-slate-500 dark:text-zinc-500">
+          Verificando sessão Gembify...
+        </p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LoginScreen
+        isAmoled={isAmoled}
+        onToggleTheme={toggleTheme}
+        onLoginSuccess={handleLogin}
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-slate-900 transition-colors duration-200 dark:bg-[#000000] dark:text-zinc-100">
       <Sidebar
@@ -187,6 +269,8 @@ export default function App() {
         onGoHome={handleGoHome}
         onDeleteReport={handleDeleteReport}
         health={health}
+        user={user}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Shell */}
@@ -237,14 +321,23 @@ export default function App() {
               <div className="hidden items-center gap-2 text-xs text-slate-400 md:flex dark:text-zinc-500">
                 <span>/</span>
                 <span className="max-w-[260px] truncate font-medium text-slate-700 dark:text-zinc-300">
-                  {activeReport.input?.segmento} · {activeReport.input?.setor}
+                  {activeReport.input?.empresa || activeReport.input?.segmento} ·{' '}
+                  {activeReport.input?.setor}
                 </span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <ThemeToggle isAmoled={isAmoled} onToggle={toggleTheme} />
+            <button
+              type="button"
+              onClick={handleLogout}
+              title={`Sair (${user.username})`}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-rose-300 hover:text-rose-600 lg:hidden dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:text-zinc-300 dark:hover:border-rose-500/40 dark:hover:text-rose-400"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
           </div>
         </header>
 

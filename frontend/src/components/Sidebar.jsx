@@ -2,11 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
+  LogOut,
   MessageSquare,
   PanelLeftClose,
   Plus,
   Search,
   Trash2,
+  User,
   X,
 } from 'lucide-react';
 import GembifyMark from './GembifyMark.jsx';
@@ -33,6 +35,8 @@ function SidebarContent({
   onCloseMobile,
   onCollapseDesktop,
   health,
+  user,
+  onLogout,
 }) {
   const [query, setQuery] = useState('');
 
@@ -223,8 +227,33 @@ function SidebarContent({
         )}
       </div>
 
-      {/* API Health footer */}
-      <div className="border-t border-slate-200/80 px-4 py-3 dark:border-[#1F1F1F]">
+      {/* User & API Health footer */}
+      <div className="space-y-3 border-t border-slate-200/80 px-4 py-3 dark:border-[#1F1F1F]">
+        {user && (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2 dark:border-[#1A1A1A] dark:bg-[#0B0B0B]">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                <User className="h-3.5 w-3.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-slate-800 dark:text-zinc-200">
+                  {user.username}
+                </p>
+                <p className="text-[10px] text-slate-400 dark:text-zinc-500">Sessão autenticada</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onLogout}
+              title="Sair da conta"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sair
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-2 text-[11px]">
           <div className="flex items-center gap-2">
             <span
@@ -268,6 +297,8 @@ export default function Sidebar({
   onGoHome,
   onDeleteReport,
   health,
+  user,
+  onLogout,
 }) {
   return (
     <>
@@ -288,6 +319,8 @@ export default function Sidebar({
             onDeleteReport={onDeleteReport}
             onCollapseDesktop={onCollapseDesktop}
             health={health}
+            user={user}
+            onLogout={onLogout}
           />
         </div>
       </motion.aside>
@@ -319,6 +352,8 @@ export default function Sidebar({
                 onDeleteReport={onDeleteReport}
                 onCloseMobile={onCloseMobile}
                 health={health}
+                user={user}
+                onLogout={onLogout}
               />
             </motion.aside>
           </div>

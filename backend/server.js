@@ -1,7 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import authRoutes from './routes/authRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import { requireAuth } from './middleware/authMiddleware.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -28,7 +30,8 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.use('/api/reports', reportRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/reports', requireAuth, reportRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Rota não encontrada.' });

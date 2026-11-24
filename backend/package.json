@@ -1,0 +1,17 @@
+{
+  "name": "mfv-lean-backend",
+  "version": "1.0.0",
+  "description": "API REST desacoplada para o MFV — Consultoria Lean Manufacturing com IA",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.20.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}

@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    transition: background-color 220ms ease, color 220ms ease;
+  }
+}
+
+@layer components {
+  .saas-card {
+    @apply rounded-2xl border border-slate-200/90 bg-white shadow-soft-card transition-colors duration-200 dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:shadow-none;
+  }
+
+  .saas-input {
+    @apply w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-[#1F1F1F] dark:bg-[#050505] dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-500/70 dark:focus:bg-[#0A0A0A] dark:focus:ring-emerald-500/15;
+  }
+}
+
+/* Fundo sutil estilo engenharia/industrial */
+.industrial-grid-bg {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.22) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .industrial-grid-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Scrollbar elegante para Light e AMOLED */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(63, 63, 70, 0.7);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.85);
+}
+
+/* Ajustes de SVG para diagramas Mermaid */
+.mermaid-canvas svg {
+  max-width: none !important;
+  height: auto !important;
+}

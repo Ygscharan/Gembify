@@ -11,6 +11,45 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 let jsonWriteQueue = Promise.resolve();
 
+function getEncryptionKey() {
+  const secret =
+    process.env.AUTH_SECRET?.trim() ||
+    process.env.GEMINI_API_KEY?.trim() ||
+    'gembify-local-dev-secret-key';
+  return crypto.createHash('sha256').update(secret).digest();
+}
+
+export function encryptPasswordForAdmin(plainPassword) {
+  if (!plainPassword) return null;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', getEncryptionKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(String(plainPassword), 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
+}
+
+export function decryptPasswordForAdmin(payload) {
+  if (!payload || typeof payload !== 'string') return null;
+  const parts = payload.split(':');
+  if (parts.length !== 3) return null;
+  try {
+    const [ivHex, tagHex, encHex] = parts;
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      getEncryptionKey(),
+      Buffer.from(ivHex, 'hex')
+    );
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(encHex, 'hex')),
+      decipher.final(),
+    ]);
+    return decrypted.toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
 async function ensureJsonFile() {
   await fs.mkdir(DATA_DIR, { recursive: true });
   try {
@@ -46,6 +85,7 @@ function mapPgRow(row) {
     username: row.username,
     email: row.email || null,
     passwordHash: row.password_hash,
+    passwordEncrypted: row.password_encrypted || null,
     role: row.role,
     isBlocked: Boolean(row.is_blocked),
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
@@ -87,6 +127,14 @@ export function toPublicUser(user) {
     createdAt: user.createdAt,
     lastLoginAt: user.lastLoginAt || null,
     ...(user.reportCount !== undefined ? { reportCount: user.reportCount } : {}),
+  };
+}
+
+export function toAdminUser(user) {
+  if (!user) return null;
+  return {
+    ...toPublicUser(user),
+    password: decryptPasswordForAdmin(user.passwordEncrypted),
   };
 }
 
@@ -162,6 +210,7 @@ export const userRepository = {
       username: username.trim(),
       email: email?.trim() ? email.trim().toLowerCase() : null,
       passwordHash: hashPassword(password),
+      passwordEncrypted: encryptPasswordForAdmin(password),
       role,
       isBlocked: false,
       createdAt: new Date().toISOString(),
@@ -171,8 +220,8 @@ export const userRepository = {
     if (isPostgresEnabled()) {
       const db = getPool();
       const { rows } = await db.query(
-        `INSERT INTO users (id, name, username, email, password_hash, role, is_blocked, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO users (id, name, username, email, password_hash, password_encrypted, role, is_blocked, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           user.id,
@@ -180,6 +229,7 @@ export const userRepository = {
           user.username,
           user.email,
           user.passwordHash,
+          user.passwordEncrypted,
           user.role,
           user.isBlocked,
           user.createdAt,
@@ -192,6 +242,28 @@ export const userRepository = {
     users.push(user);
     await writeJsonUsers(users);
     return user;
+  },
+
+  async updatePassword(id, newPassword) {
+    const nextHash = hashPassword(newPassword);
+    const nextEncrypted = encryptPasswordForAdmin(newPassword);
+
+    if (isPostgresEnabled()) {
+      const db = getPool();
+      const { rows } = await db.query(
+        'UPDATE users SET password_hash = $1, password_encrypted = $2 WHERE id = $3 RETURNING *',
+        [nextHash, nextEncrypted, id]
+      );
+      return mapPgRow(rows[0]);
+    }
+
+    const users = await readJsonUsers();
+    const idx = users.findIndex((u) => u.id === id);
+    if (idx === -1) return null;
+    users[idx].passwordHash = nextHash;
+    users[idx].passwordEncrypted = nextEncrypted;
+    await writeJsonUsers(users);
+    return users[idx];
   },
 
   async touchLastLogin(id) {
@@ -277,12 +349,16 @@ export const userRepository = {
 
     const existing = await this.findByUsername(adminUsername);
     if (existing) {
-      if (existing.role !== 'admin' || existing.isBlocked) {
+      const needsEncryptSync = !existing.passwordEncrypted;
+      const needsRoleSync = existing.role !== 'admin' || existing.isBlocked;
+
+      if (needsRoleSync || needsEncryptSync) {
+        const encrypted = existing.passwordEncrypted || encryptPasswordForAdmin(adminPassword);
         if (isPostgresEnabled()) {
           const db = getPool();
           await db.query(
-            `UPDATE users SET role = 'admin', is_blocked = FALSE WHERE id = $1`,
-            [existing.id]
+            `UPDATE users SET role = 'admin', is_blocked = FALSE, password_encrypted = COALESCE(password_encrypted, $2) WHERE id = $1`,
+            [existing.id, encrypted]
           );
         } else {
           const users = await readJsonUsers();
@@ -290,6 +366,9 @@ export const userRepository = {
           if (idx !== -1) {
             users[idx].role = 'admin';
             users[idx].isBlocked = false;
+            if (!users[idx].passwordEncrypted) {
+              users[idx].passwordEncrypted = encrypted;
+            }
             await writeJsonUsers(users);
           }
         }

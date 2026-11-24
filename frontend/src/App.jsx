@@ -304,6 +304,8 @@ export default function App() {
         onLoginSuccess={handleLogin}
         onRegisterSuccess={handleRegister}
         sessionNotice={sessionNotice}
+        canInstallApp={Boolean(deferredInstallPrompt)}
+        onInstallApp={handleInstallApp}
       />
     );
   }

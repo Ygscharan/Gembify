@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { toPublicUser, userRepository } from '../repositories/userRepository.js';
+import { toAdminUser, userRepository } from '../repositories/userRepository.js';
 import { reportRepository } from '../repositories/reportRepository.js';
 
 const router = Router();
@@ -8,16 +8,46 @@ router.get('/users', async (_req, res, next) => {
   try {
     const reportMap = await reportRepository.countByUserMap();
     const users = await userRepository.findAllWithStats(reportMap);
-    const publicUsers = users.map(toPublicUser);
+    const adminUsers = users.map(toAdminUser);
 
     const stats = {
-      totalUsers: publicUsers.length,
-      activeUsers: publicUsers.filter((u) => !u.isBlocked).length,
-      blockedUsers: publicUsers.filter((u) => u.isBlocked).length,
-      totalReports: publicUsers.reduce((acc, u) => acc + (u.reportCount || 0), 0),
+      totalUsers: adminUsers.length,
+      activeUsers: adminUsers.filter((u) => !u.isBlocked).length,
+      blockedUsers: adminUsers.filter((u) => u.isBlocked).length,
+      totalReports: adminUsers.reduce((acc, u) => acc + (u.reportCount || 0), 0),
     };
 
-    return res.json({ users: publicUsers, stats });
+    return res.json({ users: adminUsers, stats });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.patch('/users/:id/password', async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    const { password = '' } = req.body || {};
+    const value = String(password);
+
+    const valid =
+      value.length >= 6 &&
+      /[A-Z]/.test(value) &&
+      /[a-z]/.test(value) &&
+      /[^A-Za-z0-9\s]/.test(value);
+
+    if (!valid) {
+      return res.status(400).json({
+        error:
+          'A nova senha deve ter no mínimo 6 caracteres, incluindo 1 letra maiúscula, letras minúsculas e 1 caractere especial (ex: !@#$%&*).',
+      });
+    }
+
+    const updated = await userRepository.updatePassword(targetId, value);
+    if (!updated) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    return res.json({ user: toAdminUser(updated) });
   } catch (err) {
     return next(err);
   }
@@ -43,7 +73,7 @@ router.patch('/users/:id/block', async (req, res, next) => {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
-    return res.json({ user: toPublicUser(updated) });
+    return res.json({ user: toAdminUser(updated) });
   } catch (err) {
     return next(err);
   }

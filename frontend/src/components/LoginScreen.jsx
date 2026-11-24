@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
   ArrowRight,
@@ -7,15 +7,18 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  Download,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
   ShieldCheck,
+  Smartphone,
   User,
   UserPlus,
   Wand2,
+  X,
   XCircle,
 } from 'lucide-react';
 import { api } from '../services/api.js';
@@ -113,14 +116,19 @@ function evaluatePassword(password) {
   };
 }
 
+const ANDROID_APK_URL = import.meta.env.VITE_ANDROID_APK_URL?.trim() || '';
+
 export default function LoginScreen({
   isAmoled,
   onToggleTheme,
   onLoginSuccess,
   onRegisterSuccess,
   sessionNotice,
+  canInstallApp = false,
+  onInstallApp,
 }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [androidModalOpen, setAndroidModalOpen] = useState(false);
 
   // Login fields
   const [identifier, setIdentifier] = useState('');
@@ -326,11 +334,10 @@ export default function LoginScreen({
 
               {/* Bordão / Frase de efeito */}
               <p className="mt-1.5 max-w-sm text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">
-                Seu copiloto de{' '}
+                Seu copiloto avançado para{' '}
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  Lean Manufacturing
-                </span>{' '}
-                no chão de fábrica.
+                  decisões complexas.
+                </span>
               </p>
             </div>
 
@@ -706,10 +713,129 @@ export default function LoginScreen({
           </div>
         </div>
 
-        <p className="mt-4 text-center font-mono text-[11px] text-slate-400 dark:text-zinc-600">
-          Contas isoladas com criptografia de senha · Gembify Industrial SaaS
-        </p>
+        {/* Botão para baixar / instalar o app no Android */}
+        <div className="mt-4 flex flex-col items-center gap-3">
+          {ANDROID_APK_URL ? (
+            <a
+              href={ANDROID_APK_URL}
+              download="Gembify-Android.apk"
+              data-spotlight-shield="true"
+              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/35 bg-white px-5 py-3 text-xs font-bold text-slate-800 shadow-sm transition-all hover:border-emerald-500/70 hover:bg-emerald-50/70 dark:border-[#242424] dark:bg-[#0A0A0A] dark:text-zinc-100 dark:hover:border-emerald-500/50 dark:hover:bg-[#101010]"
+            >
+              <Smartphone className="h-4 w-4 text-emerald-500" />
+              <span>Baixar App para Android (.APK)</span>
+              <Download className="h-3.5 w-3.5 text-emerald-500 transition-transform group-hover:translate-y-0.5" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              data-spotlight-shield="true"
+              onClick={() => {
+                if (canInstallApp && onInstallApp) {
+                  onInstallApp();
+                } else {
+                  setAndroidModalOpen(true);
+                }
+              }}
+              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/35 bg-white px-5 py-3 text-xs font-bold text-slate-800 shadow-sm transition-all hover:border-emerald-500/70 hover:bg-emerald-50/70 dark:border-[#242424] dark:bg-[#0A0A0A] dark:text-zinc-100 dark:hover:border-emerald-500/50 dark:hover:bg-[#101010]"
+            >
+              <Smartphone className="h-4 w-4 text-emerald-500" />
+              <span>Baixar App para Android</span>
+              <Download className="h-3.5 w-3.5 text-emerald-500 transition-transform group-hover:translate-y-0.5" />
+            </button>
+          )}
+
+          <p className="text-center font-mono text-[11px] text-slate-400 dark:text-zinc-600">
+            Contas isoladas com criptografia de senha · Gembify Industrial SaaS
+          </p>
+        </div>
       </motion.div>
+
+      {/* Modal de instalação rápida no Android */}
+      <AnimatePresence>
+        {androidModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setAndroidModalOpen(false)}
+              className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 12 }}
+              role="dialog"
+              aria-modal="true"
+              data-spotlight-shield="true"
+              className="relative z-10 w-full max-w-sm overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-[#242424] dark:bg-[#0A0A0A]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                    <Smartphone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
+                      Instalar Gembify no Android
+                    </h2>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Acesso direto em tela cheia como app nativo
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAndroidModalOpen(false)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-[#161616] dark:hover:text-zinc-200"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <ol className="mt-5 space-y-3 text-xs leading-relaxed text-slate-600 dark:text-zinc-300">
+                <li className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    1
+                  </span>
+                  <span>
+                    Abra <strong>gembify.vercel.app</strong> no navegador{' '}
+                    <strong>Google Chrome</strong> do seu celular Android.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    2
+                  </span>
+                  <span>
+                    Toque no menu <strong>⋮</strong> (canto superior direito) e selecione{' '}
+                    <strong>&ldquo;Instalar aplicativo&rdquo;</strong> ou{' '}
+                    <strong>&ldquo;Adicionar à tela inicial&rdquo;</strong>.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    3
+                  </span>
+                  <span>
+                    Confirme em <strong>Instalar</strong> — o ícone do <strong>Gembify</strong>{' '}
+                    aparecerá na sua tela inicial em modo tela cheia!
+                  </span>
+                </li>
+              </ol>
+
+              <button
+                type="button"
+                onClick={() => setAndroidModalOpen(false)}
+                className="mt-6 w-full rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-emerald-500 dark:text-black dark:hover:bg-emerald-400"
+              >
+                Entendi
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

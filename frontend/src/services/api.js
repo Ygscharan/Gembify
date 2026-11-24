@@ -151,6 +151,13 @@ export const api = {
     });
   },
 
+  adminUpdateUserPassword(userId, password) {
+    return apiRequest(`/admin/users/${encodeURIComponent(userId)}/password`, {
+      method: 'PATCH',
+      body: JSON.stringify({ password }),
+    });
+  },
+
   adminDeleteUser(userId) {
     return apiRequest(`/admin/users/${encodeURIComponent(userId)}`, {
       method: 'DELETE',

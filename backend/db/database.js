@@ -53,11 +53,16 @@ export async function initDatabase() {
       username TEXT NOT NULL UNIQUE,
       email TEXT UNIQUE,
       password_hash TEXT NOT NULL,
+      password_encrypted TEXT,
       role TEXT NOT NULL DEFAULT 'user',
       is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ
     );
+  `);
+
+  await db.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS password_encrypted TEXT;
   `);
 
   await db.query(`

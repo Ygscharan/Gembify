@@ -18,16 +18,16 @@ DIRETRIZES TÉCNICAS OBRIGATÓRIAS:
 3. Ferramentas Lean Reais: Recomende ferramentas aplicáveis ao caso concreto (ex: MFV, 5S, Kaizen, SMED, Kanban, Poka-Yoke, Diagrama de Espaguete, Trabalho Padronizado, Heijunka, Andon, Gestão Visual, Layout Celular, Mizusumashi, TPM).
 4. Diagrama Mermaid (diagrama_mermaid):
    - Deve começar OBRIGATORIAMENTE com "graph LR".
-   - Compare de forma limpa e visual o FLUXO ATUAL (com gargalo) versus o FLUXO OTIMIZADO usando dois subgraphs: "subgraph Atual" e "subgraph Otimizado".
-   - REGRA CRÍTICA DE SINTAXE MERMAID: use APENAS IDs simples (A1, A2, O1, O2) e rótulos entre colchetes com texto simples em português SEM aspas duplas internas, SEM parênteses, SEM colchetes aninhados, SEM chaves, SEM ponto e vírgula e SEM emojis. Exemplo seguro:
+   - Compare de forma limpa e visual o FLUXO ATUAL (com gargalo) versus o FLUXO OTIMIZADO usando dois subgraphs: 'subgraph Atual ["Fluxo Atual com Gargalo"]' e 'subgraph Otimizado ["Fluxo Otimizado Lean"]'.
+   - REGRA CRÍTICA DE SINTAXE MERMAID v11: use APENAS IDs simples (A1, A2, O1, O2) e rótulos SEMPRE entre colchetes e aspas duplas A1["Texto Simples"], SEM aspas internas, SEM parênteses, SEM colchetes aninhados, SEM chaves, SEM ponto e vírgula e SEM emojis. Exemplo seguro:
      graph LR
-       subgraph Atual[Fluxo Atual com Gargalo]
-         A1[Inicio do Processo] --> A2[Gargalo Critico]
-         A2 --> A3[Retrabalho e Atraso]
+       subgraph Atual ["Fluxo Atual com Gargalo"]
+         A1["Inicio do Processo"] --> A2["Gargalo Critico"]
+         A2 --> A3["Retrabalho e Atraso"]
        end
-       subgraph Otimizado[Fluxo Otimizado Lean]
-         O1[Inicio Padronizado] --> O2[Fluxo Continuo]
-         O2 --> O3[Entrega Sem Paradas]
+       subgraph Otimizado ["Fluxo Otimizado Lean"]
+         O1["Inicio Padronizado"] --> O2["Fluxo Continuo"]
+         O2 --> O3["Entrega Sem Paradas"]
        end
 5. Planos de Ação em EXATAMENTE 3 faixas de investimento:
    - zero_baixo_custo: Quick Wins, 5S, gestão visual, padronização de processo, adaptações imediatas e baratas.

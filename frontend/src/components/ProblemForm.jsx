@@ -83,7 +83,10 @@ export default function ProblemForm({ onSubmit, error, health, draftSession }) {
       className="mx-auto max-w-4xl space-y-6 pb-12"
     >
       {/* Hero section */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft-card sm:p-8 dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:shadow-none">
+      <div
+        data-spotlight-shield="true"
+        className="relative z-10 overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft-card sm:p-8 dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:shadow-none"
+      >
         {/* Subtle top accent glow in AMOLED */}
         <div className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl dark:bg-emerald-500/15" />
         <div className="pointer-events-none absolute -bottom-24 left-12 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl dark:bg-cyan-500/10" />

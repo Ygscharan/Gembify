@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { LogOut, Menu, PanelLeftOpen } from 'lucide-react';
+import { LogOut, Menu, PanelLeftOpen, Smartphone } from 'lucide-react';
 import {
   api,
   clearStoredToken,
@@ -17,6 +17,7 @@ import NewConsultationModal from './components/NewConsultationModal.jsx';
 import GembifyMark from './components/GembifyMark.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
+import CursorSpotlight from './components/CursorSpotlight.jsx';
 
 export default function App() {
   const { isAmoled, toggleTheme } = useTheme();
@@ -42,6 +43,32 @@ export default function App() {
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [chatError, setChatError] = useState(null);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event);
+    };
+    const handleAppInstalled = () => {
+      setDeferredInstallPrompt(null);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredInstallPrompt(null);
+    }
+  };
 
   const handleLogout = useCallback((notice = null) => {
     clearStoredToken();
@@ -282,7 +309,9 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] text-slate-900 transition-colors duration-200 dark:bg-[#000000] dark:text-zinc-100">
+    <div className="relative flex min-h-screen bg-[#F8FAFC] text-slate-900 transition-colors duration-200 dark:bg-[#000000] dark:text-zinc-100">
+      <CursorSpotlight isAmoled={isAmoled} />
+
       <Sidebar
         desktopOpen={desktopSidebarOpen}
         mobileOpen={mobileSidebarOpen}
@@ -302,7 +331,7 @@ export default function App() {
       />
 
       {/* Main Content Shell */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         {/* Sticky Topbar */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-[#F8FAFC]/85 px-4 backdrop-blur-md sm:px-6 dark:border-[#1F1F1F] dark:bg-[#000000]/85">
           <div className="flex items-center gap-2.5">
@@ -363,6 +392,16 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {deferredInstallPrompt && (
+              <button
+                type="button"
+                onClick={handleInstallApp}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400"
+              >
+                <Smartphone className="h-3.5 w-3.5" />
+                <span>Instalar App</span>
+              </button>
+            )}
             <ThemeToggle isAmoled={isAmoled} onToggle={toggleTheme} />
             <button
               type="button"

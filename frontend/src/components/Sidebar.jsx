@@ -334,14 +334,14 @@ export default function Sidebar({
 }) {
   return (
     <>
-      {/* Desktop collapsible sidebar */}
+      {/* Desktop collapsible sidebar — sticky diretamente no aside para fixar o rodapé do usuário */}
       <motion.aside
         initial={false}
         animate={{ width: desktopOpen ? 288 : 0, opacity: desktopOpen ? 1 : 0 }}
         transition={{ duration: 0.22, ease: 'easeInOut' }}
-        className="hidden shrink-0 overflow-hidden border-r border-slate-200/90 lg:block dark:border-[#1F1F1F]"
+        className="sticky top-0 z-20 hidden h-screen shrink-0 self-start overflow-hidden border-r border-slate-200/90 bg-white lg:block dark:border-[#1F1F1F] dark:bg-[#050505]"
       >
-        <div className="h-screen w-72 sticky top-0">
+        <div className="h-full w-72">
           <SidebarContent
             reports={reports}
             selectedReportId={selectedReportId}

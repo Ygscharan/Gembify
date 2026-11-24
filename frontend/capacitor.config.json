@@ -1,0 +1,15 @@
+{
+  "appId": "com.gembify.app",
+  "appName": "Gembify",
+  "webDir": "dist",
+  "server": {
+    "url": "https://gembify.vercel.app",
+    "cleartext": false
+  },
+  "android": {
+    "backgroundColor": "#000000"
+  },
+  "ios": {
+    "backgroundColor": "#000000"
+  }
+}

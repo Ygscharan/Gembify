@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api.js';
 import ThemeToggle from './ThemeToggle.jsx';
+import CursorSpotlight from './CursorSpotlight.jsx';
 
 const SPECIAL_CHARS = '!@#$%&*?';
 const UPPER_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -143,11 +144,6 @@ export default function LoginScreen({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Cursor spotlight refs (DOM-only updates for smooth 60fps with zero re-renders)
-  const spotlightRef = useRef(null);
-  const gridHighlightRef = useRef(null);
-  const isOverCardRef = useRef(false);
-
   const passwordAnalysis = useMemo(() => evaluatePassword(regPassword), [regPassword]);
 
   // Debounced live username availability check during registration
@@ -195,39 +191,6 @@ export default function LoginScreen({
       clearTimeout(timer);
     };
   }, [username, mode]);
-
-  const handleMouseMove = (event) => {
-    const x = event.clientX;
-    const y = event.clientY;
-
-    if (spotlightRef.current) {
-      spotlightRef.current.style.setProperty('--mx', `${x}px`);
-      spotlightRef.current.style.setProperty('--my', `${y}px`);
-      spotlightRef.current.style.opacity = isOverCardRef.current ? '0.2' : '1';
-    }
-    if (gridHighlightRef.current) {
-      gridHighlightRef.current.style.setProperty('--mx', `${x}px`);
-      gridHighlightRef.current.style.setProperty('--my', `${y}px`);
-      gridHighlightRef.current.style.opacity = isOverCardRef.current ? '0.15' : '1';
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (spotlightRef.current) spotlightRef.current.style.opacity = '0';
-    if (gridHighlightRef.current) gridHighlightRef.current.style.opacity = '0';
-  };
-
-  const handleCardEnter = () => {
-    isOverCardRef.current = true;
-    if (spotlightRef.current) spotlightRef.current.style.opacity = '0.18';
-    if (gridHighlightRef.current) gridHighlightRef.current.style.opacity = '0.12';
-  };
-
-  const handleCardLeave = () => {
-    isOverCardRef.current = false;
-    if (spotlightRef.current) spotlightRef.current.style.opacity = '1';
-    if (gridHighlightRef.current) gridHighlightRef.current.style.opacity = '1';
-  };
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
@@ -321,52 +284,20 @@ export default function LoginScreen({
     !isSubmitting;
 
   return (
-    <div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="industrial-grid-bg relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F8FAFC] px-4 py-10 text-slate-900 transition-colors duration-200 dark:bg-[#000000] dark:text-zinc-100"
-    >
-      {/* Background-only mouse spotlight glow (z-0, strictly behind the opaque login box) */}
-      <div
-        ref={spotlightRef}
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-0 opacity-0 transition-opacity duration-300"
-        style={{
-          background: isAmoled
-            ? 'radial-gradient(460px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.095), rgba(16, 185, 129, 0.075) 35%, rgba(6, 182, 212, 0.04) 55%, transparent 74%)'
-            : 'radial-gradient(460px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.95), rgba(16, 185, 129, 0.13) 38%, rgba(6, 182, 212, 0.06) 58%, transparent 74%)',
-        }}
-      />
-
-      {/* Illuminated dot-grid mask under cursor (background only) */}
-      <div
-        ref={gridHighlightRef}
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-0 opacity-0 transition-opacity duration-300"
-        style={{
-          backgroundImage: isAmoled
-            ? 'radial-gradient(rgba(16, 185, 129, 0.38) 1px, transparent 1px)'
-            : 'radial-gradient(rgba(16, 185, 129, 0.35) 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-          WebkitMaskImage:
-            'radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 75%)',
-          maskImage:
-            'radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 75%)',
-        }}
-      />
+    <div className="industrial-grid-bg relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F8FAFC] px-4 py-10 text-slate-900 transition-colors duration-200 dark:bg-[#000000] dark:text-zinc-100">
+      <CursorSpotlight isAmoled={isAmoled} />
 
       {/* Top right theme switcher */}
       <div className="fixed right-4 top-4 z-20 sm:right-6 sm:top-6">
         <ThemeToggle isAmoled={isAmoled} onToggle={onToggleTheme} />
       </div>
 
-      {/* Main Login Card (strictly opaque z-10 so cursor spotlight never brightens the box) */}
+      {/* Main Login Card (strictly opaque z-10 + spotlight shield) */}
       <motion.div
         initial={{ opacity: 0, y: 18, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.35 }}
-        onMouseEnter={handleCardEnter}
-        onMouseLeave={handleCardLeave}
+        data-spotlight-shield="true"
         className="relative z-10 w-full max-w-md"
       >
         <div className="overflow-hidden rounded-3xl border border-slate-200/95 bg-white shadow-2xl shadow-slate-900/10 dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:shadow-[0_24px_80px_-20px_rgba(0,0,0,0.95)]">

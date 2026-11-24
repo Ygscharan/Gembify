@@ -15,7 +15,7 @@
 
 @layer components {
   .saas-card {
-    @apply rounded-2xl border border-slate-200/90 bg-white shadow-soft-card transition-colors duration-200 dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:shadow-none;
+    @apply relative z-10 rounded-2xl border border-slate-200/90 bg-white shadow-soft-card transition-colors duration-200 dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:shadow-none;
   }
 
   .saas-input {

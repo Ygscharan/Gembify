@@ -96,10 +96,11 @@ export default function ProblemForm({ onSubmit, error, health, draftSession }) {
             </div>
 
             <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-              Transforme gargalos do chão de fábrica em{' '}
+              Seu copiloto de{' '}
               <span className="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
-                planos de ação Lean
-              </span>
+                Lean Manufacturing
+              </span>{' '}
+              no chão de fábrica
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base dark:text-zinc-400">

@@ -395,9 +395,11 @@ export default function LoginScreen({
 
               {/* Bordão / Frase de efeito */}
               <p className="mt-1.5 max-w-sm text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">
-                Onde o <span className="font-semibold text-emerald-600 dark:text-emerald-400">Gemba</span>{' '}
-                encontra a inteligência — transforme gargalos em{' '}
-                <span className="font-semibold text-cyan-600 dark:text-cyan-400">fluxo contínuo</span>.
+                Seu copiloto de{' '}
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  Lean Manufacturing
+                </span>{' '}
+                no chão de fábrica.
               </p>
             </div>
 

@@ -116,7 +116,14 @@ function evaluatePassword(password) {
   };
 }
 
-const ANDROID_APK_URL = import.meta.env.VITE_ANDROID_APK_URL?.trim() || '';
+const DEFAULT_ANDROID_APK_URL =
+  'https://github.com/Ygscharan/Gembify/releases/latest/download/Gembify.apk';
+const ANDROID_APK_URL = import.meta.env.VITE_ANDROID_APK_URL?.trim() || DEFAULT_ANDROID_APK_URL;
+
+function isRunningInsideNativeApp() {
+  if (typeof window === 'undefined') return false;
+  return Boolean(window.Capacitor?.isNativePlatform?.());
+}
 
 export default function LoginScreen({
   isAmoled,
@@ -713,36 +720,19 @@ export default function LoginScreen({
           </div>
         </div>
 
-        {/* Botão para baixar / instalar o app no Android */}
+        {/* Botão para baixar o arquivo APK nativo do Android (oculto se já estiver dentro do app) */}
         <div className="mt-4 flex flex-col items-center gap-3">
-          {ANDROID_APK_URL ? (
+          {!isRunningInsideNativeApp() && (
             <a
               href={ANDROID_APK_URL}
-              download="Gembify-Android.apk"
+              download="Gembify.apk"
               data-spotlight-shield="true"
-              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/35 bg-white px-5 py-3 text-xs font-bold text-slate-800 shadow-sm transition-all hover:border-emerald-500/70 hover:bg-emerald-50/70 dark:border-[#242424] dark:bg-[#0A0A0A] dark:text-zinc-100 dark:hover:border-emerald-500/50 dark:hover:bg-[#101010]"
+              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-white px-5 py-3 text-xs font-bold text-slate-800 shadow-sm transition-all hover:border-emerald-500/75 hover:bg-emerald-50/70 dark:border-[#242424] dark:bg-[#0A0A0A] dark:text-zinc-100 dark:hover:border-emerald-500/55 dark:hover:bg-[#101010]"
             >
               <Smartphone className="h-4 w-4 text-emerald-500" />
               <span>Baixar App para Android (.APK)</span>
               <Download className="h-3.5 w-3.5 text-emerald-500 transition-transform group-hover:translate-y-0.5" />
             </a>
-          ) : (
-            <button
-              type="button"
-              data-spotlight-shield="true"
-              onClick={() => {
-                if (canInstallApp && onInstallApp) {
-                  onInstallApp();
-                } else {
-                  setAndroidModalOpen(true);
-                }
-              }}
-              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/35 bg-white px-5 py-3 text-xs font-bold text-slate-800 shadow-sm transition-all hover:border-emerald-500/70 hover:bg-emerald-50/70 dark:border-[#242424] dark:bg-[#0A0A0A] dark:text-zinc-100 dark:hover:border-emerald-500/50 dark:hover:bg-[#101010]"
-            >
-              <Smartphone className="h-4 w-4 text-emerald-500" />
-              <span>Baixar App para Android</span>
-              <Download className="h-3.5 w-3.5 text-emerald-500 transition-transform group-hover:translate-y-0.5" />
-            </button>
           )}
 
           <p className="text-center font-mono text-[11px] text-slate-400 dark:text-zinc-600">

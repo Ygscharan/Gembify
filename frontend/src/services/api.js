@@ -1,4 +1,13 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+function resolveApiBaseUrl() {
+  const raw = (import.meta.env.VITE_API_URL || '/api').trim().replace(/\/+$/, '');
+  if (!raw) return '/api';
+  if (/^https?:\/\//i.test(raw) && !raw.endsWith('/api')) {
+    return `${raw}/api`;
+  }
+  return raw;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 const TOKEN_STORAGE_KEY = 'gembify_auth_token';
 
 let unauthorizedHandler = null;

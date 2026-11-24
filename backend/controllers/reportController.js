@@ -25,6 +25,7 @@ export async function analyzeReport(req, res, next) {
     const now = new Date().toISOString();
     const newReport = {
       id: crypto.randomUUID(),
+      userId: req.user.id,
       createdAt: now,
       updatedAt: now,
       input: problemData,
@@ -40,9 +41,9 @@ export async function analyzeReport(req, res, next) {
   }
 }
 
-export async function listReports(_req, res, next) {
+export async function listReports(req, res, next) {
   try {
-    const reports = await reportRepository.findAll();
+    const reports = await reportRepository.findAllByUser(req.user.id);
     const summaries = reports.map((report) => ({
       id: report.id,
       createdAt: report.createdAt,
@@ -61,7 +62,7 @@ export async function listReports(_req, res, next) {
 
 export async function getReportById(req, res, next) {
   try {
-    const report = await reportRepository.findById(req.params.id);
+    const report = await reportRepository.findByIdForUser(req.params.id, req.user.id);
     if (!report) {
       return res.status(404).json({ error: 'Relatório não encontrado.' });
     }
@@ -78,7 +79,7 @@ export async function chatAboutReport(req, res, next) {
       return res.status(400).json({ error: 'A mensagem não pode estar vazia.' });
     }
 
-    const report = await reportRepository.findById(req.params.id);
+    const report = await reportRepository.findByIdForUser(req.params.id, req.user.id);
     if (!report) {
       return res.status(404).json({ error: 'Relatório não encontrado.' });
     }
@@ -100,10 +101,11 @@ export async function chatAboutReport(req, res, next) {
       timestamp: new Date().toISOString(),
     };
 
-    const updatedReport = await reportRepository.appendChatMessages(report.id, [
-      userMsg,
-      assistantMsg,
-    ]);
+    const updatedReport = await reportRepository.appendChatMessagesForUser(
+      report.id,
+      req.user.id,
+      [userMsg, assistantMsg]
+    );
 
     return res.json({
       userMessage: userMsg,
@@ -117,7 +119,7 @@ export async function chatAboutReport(req, res, next) {
 
 export async function deleteReport(req, res, next) {
   try {
-    const deleted = await reportRepository.deleteById(req.params.id);
+    const deleted = await reportRepository.deleteByIdForUser(req.params.id, req.user.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Relatório não encontrado.' });
     }

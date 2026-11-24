@@ -61,10 +61,11 @@ async function apiRequest(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    if (response.status === 401 && !skipAuth) {
+    const isBlocked = response.status === 403 && data?.code === 'ACCOUNT_BLOCKED';
+    if ((response.status === 401 || isBlocked) && !skipAuth) {
       clearStoredToken();
       if (typeof unauthorizedHandler === 'function') {
-        unauthorizedHandler();
+        unauthorizedHandler(isBlocked ? data?.error : null);
       }
     }
 
@@ -84,11 +85,19 @@ export const api = {
     return apiRequest('/health', { skipAuth: true });
   },
 
-  login(username, password) {
+  login(identifier, password) {
     return apiRequest('/auth/login', {
       method: 'POST',
       skipAuth: true,
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ identifier, password }),
+    });
+  },
+
+  register({ name, username, email, password }) {
+    return apiRequest('/auth/register', {
+      method: 'POST',
+      skipAuth: true,
+      body: JSON.stringify({ name, username, email, password }),
     });
   },
 
@@ -120,6 +129,23 @@ export const api = {
 
   deleteReport(id) {
     return apiRequest(`/reports/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  adminListUsers() {
+    return apiRequest('/admin/users');
+  },
+
+  adminSetUserBlocked(userId, isBlocked) {
+    return apiRequest(`/admin/users/${encodeURIComponent(userId)}/block`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isBlocked }),
+    });
+  },
+
+  adminDeleteUser(userId) {
+    return apiRequest(`/admin/users/${encodeURIComponent(userId)}`, {
       method: 'DELETE',
     });
   },

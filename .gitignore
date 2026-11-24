@@ -4,6 +4,7 @@ dist/
 backend/.env
 frontend/.env
 backend/data/reports.json
+backend/data/users.json
 backend/data/*.tmp
 .DS_Store
 Thumbs.db

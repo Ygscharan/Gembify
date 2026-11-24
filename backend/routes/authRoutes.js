@@ -1,15 +1,16 @@
 import { Router } from 'express';
+import { createAuthToken, requireAuth } from '../middleware/authMiddleware.js';
 import {
-  createAuthToken,
-  requireAuth,
-  safeCompare,
-} from '../middleware/authMiddleware.js';
+  toPublicUser,
+  userRepository,
+  verifyPassword,
+} from '../repositories/userRepository.js';
 
 const router = Router();
 
-// Proteção simples contra força bruta (máx. 10 tentativas falhas por IP a cada 15 min)
+// Proteção contra força bruta (máx. 12 tentativas falhas por IP a cada 15 min)
 const failedAttempts = new Map();
-const MAX_ATTEMPTS = 10;
+const MAX_ATTEMPTS = 12;
 const WINDOW_MS = 15 * 60 * 1000;
 
 function getClientIp(req) {
@@ -44,56 +45,127 @@ function registerFailure(ip) {
   }
 }
 
-router.post('/login', (req, res) => {
-  const ip = getClientIp(req);
-  const limit = checkRateLimit(ip);
-  if (limit.blocked) {
-    return res.status(429).json({
-      error: `Muitas tentativas de login incorretas. Tente novamente em ${limit.remainingMin} minuto(s).`,
-      code: 'TOO_MANY_ATTEMPTS',
+router.post('/register', async (req, res, next) => {
+  try {
+    const { name = '', username = '', email = '', password = '' } = req.body || {};
+
+    const cleanName = String(name).trim();
+    const cleanUsername = String(username).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password);
+
+    if (cleanName.length < 2 || cleanName.length > 80) {
+      return res.status(400).json({
+        error: 'Informe seu nome completo (mínimo 2 caracteres).',
+      });
+    }
+
+    if (!/^[a-zA-Z0-9._-]{3,30}$/.test(cleanUsername)) {
+      return res.status(400).json({
+        error: 'O usuário deve ter entre 3 e 30 caracteres (apenas letras, números, ponto, _ ou -).',
+      });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({
+        error: 'Informe um e-mail válido.',
+      });
+    }
+
+    if (cleanPassword.length < 6) {
+      return res.status(400).json({
+        error: 'A senha precisa ter pelo menos 6 caracteres.',
+      });
+    }
+
+    const existingUser = await userRepository.findByUsername(cleanUsername);
+    if (existingUser) {
+      return res.status(409).json({
+        error: 'Este nome de usuário já está em uso. Escolha outro.',
+      });
+    }
+
+    const existingEmail = await userRepository.findByEmail(cleanEmail);
+    if (existingEmail) {
+      return res.status(409).json({
+        error: 'Este e-mail já possui uma conta cadastrada.',
+      });
+    }
+
+    const newUser = await userRepository.create({
+      name: cleanName,
+      username: cleanUsername,
+      email: cleanEmail,
+      password: cleanPassword,
+      role: 'user',
     });
-  }
 
-  const expectedUser = process.env.AUTH_USERNAME?.trim();
-  const expectedPass = process.env.AUTH_PASSWORD;
+    await userRepository.touchLastLogin(newUser.id);
+    const token = createAuthToken(newUser);
 
-  if (!expectedUser || !expectedPass) {
-    return res.status(500).json({
-      error:
-        'Autenticação não configurada no servidor. Defina AUTH_USERNAME e AUTH_PASSWORD nas variáveis de ambiente.',
-      code: 'AUTH_NOT_CONFIGURED',
+    return res.status(201).json({
+      token,
+      user: toPublicUser(newUser),
     });
+  } catch (err) {
+    if (err?.code === '23505') {
+      return res.status(409).json({
+        error: 'Usuário ou e-mail já cadastrado.',
+      });
+    }
+    return next(err);
   }
+});
 
-  const { username = '', password = '' } = req.body || {};
-  const inputUser = String(username).trim();
-  const inputPass = String(password);
+router.post('/login', async (req, res, next) => {
+  try {
+    const ip = getClientIp(req);
+    const limit = checkRateLimit(ip);
+    if (limit.blocked) {
+      return res.status(429).json({
+        error: `Muitas tentativas incorretas. Tente novamente em ${limit.remainingMin} minuto(s).`,
+        code: 'TOO_MANY_ATTEMPTS',
+      });
+    }
 
-  if (!inputUser || !inputPass) {
-    return res.status(400).json({
-      error: 'Informe usuário e senha para entrar.',
-      code: 'MISSING_CREDENTIALS',
+    const { identifier, username, password = '' } = req.body || {};
+    const loginId = String(identifier ?? username ?? '').trim();
+    const inputPass = String(password);
+
+    if (!loginId || !inputPass) {
+      return res.status(400).json({
+        error: 'Informe usuário (ou e-mail) e senha para entrar.',
+        code: 'MISSING_CREDENTIALS',
+      });
+    }
+
+    const user = await userRepository.findByUsernameOrEmail(loginId);
+    if (!user || !verifyPassword(inputPass, user.passwordHash)) {
+      registerFailure(ip);
+      return res.status(401).json({
+        error: 'Usuário ou senha incorretos.',
+        code: 'INVALID_CREDENTIALS',
+      });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({
+        error: 'Sua conta foi bloqueada pelo administrador. Entre em contato para reativação.',
+        code: 'ACCOUNT_BLOCKED',
+      });
+    }
+
+    failedAttempts.delete(ip);
+    await userRepository.touchLastLogin(user.id);
+    const token = createAuthToken(user);
+
+    return res.json({
+      token,
+      user: toPublicUser(user),
     });
+  } catch (err) {
+    return next(err);
   }
-
-  const userOk = safeCompare(inputUser, expectedUser);
-  const passOk = safeCompare(inputPass, expectedPass);
-
-  if (!userOk || !passOk) {
-    registerFailure(ip);
-    return res.status(401).json({
-      error: 'Usuário ou senha incorretos.',
-      code: 'INVALID_CREDENTIALS',
-    });
-  }
-
-  failedAttempts.delete(ip);
-  const token = createAuthToken(expectedUser);
-
-  return res.json({
-    token,
-    user: { username: expectedUser },
-  });
 });
 
 router.get('/me', requireAuth, (req, res) => {

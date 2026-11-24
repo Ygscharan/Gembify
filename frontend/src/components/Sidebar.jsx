@@ -7,6 +7,7 @@ import {
   PanelLeftClose,
   Plus,
   Search,
+  Shield,
   Trash2,
   User,
   X,
@@ -31,6 +32,8 @@ function SidebarContent({
   onSelectReport,
   onNewAnalysis,
   onGoHome,
+  onOpenAdmin,
+  isAdminView,
   onDeleteReport,
   onCloseMobile,
   onCollapseDesktop,
@@ -117,6 +120,24 @@ function SidebarContent({
           <Plus className="h-4 w-4 stroke-[2.5]" />
           Nova Consultoria
         </button>
+
+        {user?.role === 'admin' && (
+          <button
+            type="button"
+            onClick={() => {
+              onOpenAdmin?.();
+              onCloseMobile?.();
+            }}
+            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold transition-all ${
+              isAdminView
+                ? 'border-violet-500/50 bg-violet-500/15 text-violet-700 dark:text-violet-300'
+                : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-violet-500/40 hover:bg-violet-50/70 dark:border-[#1F1F1F] dark:bg-[#0D0D0D] dark:text-zinc-300 dark:hover:border-violet-500/40'
+            }`}
+          >
+            <Shield className="h-3.5 w-3.5 text-violet-500" />
+            Painel Admin (Usuários)
+          </button>
+        )}
 
         {/* Search box */}
         {reports.length > 0 && (
@@ -236,10 +257,19 @@ function SidebarContent({
                 <User className="h-3.5 w-3.5" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-xs font-bold text-slate-800 dark:text-zinc-200">
-                  {user.username}
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-xs font-bold text-slate-800 dark:text-zinc-200">
+                    {user.name || user.username}
+                  </p>
+                  {user.role === 'admin' && (
+                    <span className="rounded bg-violet-500/15 px-1 py-0.5 font-mono text-[9px] font-bold uppercase text-violet-600 dark:text-violet-400">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <p className="truncate font-mono text-[10px] text-slate-400 dark:text-zinc-500">
+                  @{user.username}
                 </p>
-                <p className="text-[10px] text-slate-400 dark:text-zinc-500">Sessão autenticada</p>
               </div>
             </div>
             <button
@@ -295,6 +325,8 @@ export default function Sidebar({
   onSelectReport,
   onNewAnalysis,
   onGoHome,
+  onOpenAdmin,
+  isAdminView,
   onDeleteReport,
   health,
   user,
@@ -316,6 +348,8 @@ export default function Sidebar({
             onSelectReport={onSelectReport}
             onNewAnalysis={onNewAnalysis}
             onGoHome={onGoHome}
+            onOpenAdmin={onOpenAdmin}
+            isAdminView={isAdminView}
             onDeleteReport={onDeleteReport}
             onCollapseDesktop={onCollapseDesktop}
             health={health}
@@ -349,6 +383,8 @@ export default function Sidebar({
                 onSelectReport={onSelectReport}
                 onNewAnalysis={onNewAnalysis}
                 onGoHome={onGoHome}
+                onOpenAdmin={onOpenAdmin}
+                isAdminView={isAdminView}
                 onDeleteReport={onDeleteReport}
                 onCloseMobile={onCloseMobile}
                 health={health}

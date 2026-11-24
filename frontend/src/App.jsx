@@ -16,13 +16,16 @@ import ReportView from './components/ReportView.jsx';
 import NewConsultationModal from './components/NewConsultationModal.jsx';
 import GembifyMark from './components/GembifyMark.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
+import AdminPanel from './components/AdminPanel.jsx';
 
 export default function App() {
   const { isAmoled, toggleTheme } = useTheme();
 
   const [authChecking, setAuthChecking] = useState(true);
   const [user, setUser] = useState(null);
+  const [sessionNotice, setSessionNotice] = useState(null);
 
+  const [activeView, setActiveView] = useState('workspace'); // 'workspace' | 'admin'
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [newModalOpen, setNewModalOpen] = useState(false);
@@ -40,19 +43,21 @@ export default function App() {
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [chatError, setChatError] = useState(null);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback((notice = null) => {
     clearStoredToken();
     setUser(null);
+    setActiveView('workspace');
     setReports([]);
     setActiveReport(null);
     setAnalyzeError(null);
     setChatError(null);
     setNewModalOpen(false);
     setMobileSidebarOpen(false);
+    setSessionNotice(typeof notice === 'string' && notice ? notice : null);
   }, []);
 
   useEffect(() => {
-    setUnauthorizedHandler(handleLogout);
+    setUnauthorizedHandler((notice) => handleLogout(notice));
     return () => setUnauthorizedHandler(null);
   }, [handleLogout]);
 
@@ -104,13 +109,24 @@ export default function App() {
     }
   }, [user, fetchAuthenticatedData]);
 
-  const handleLogin = async (username, password) => {
-    const res = await api.login(username, password);
+  const handleLogin = async (identifier, password) => {
+    setSessionNotice(null);
+    const res = await api.login(identifier, password);
     setStoredToken(res.token);
     setUser(res.user);
+    setActiveView('workspace');
+  };
+
+  const handleRegister = async (payload) => {
+    setSessionNotice(null);
+    const res = await api.register(payload);
+    setStoredToken(res.token);
+    setUser(res.user);
+    setActiveView('workspace');
   };
 
   const handleSelectReport = async (reportId) => {
+    setActiveView('workspace');
     if (activeReport?.id === reportId) return;
     setAnalyzeError(null);
     setChatError(null);
@@ -127,9 +143,15 @@ export default function App() {
   };
 
   const handleGoHome = () => {
+    setActiveView('workspace');
     setActiveReport(null);
     setAnalyzeError(null);
     setChatError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenAdmin = () => {
+    setActiveView('admin');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -139,6 +161,7 @@ export default function App() {
 
   const handleConfirmNewConsultation = ({ empresa, segmento }) => {
     setNewModalOpen(false);
+    setActiveView('workspace');
     setActiveReport(null);
     setAnalyzeError(null);
     setChatError(null);
@@ -150,6 +173,7 @@ export default function App() {
   };
 
   const handleAnalyzeProblem = async (payload) => {
+    setActiveView('workspace');
     setAnalyzeError(null);
     setChatError(null);
     setPendingProblem(payload);
@@ -251,6 +275,8 @@ export default function App() {
         isAmoled={isAmoled}
         onToggleTheme={toggleTheme}
         onLoginSuccess={handleLogin}
+        onRegisterSuccess={handleRegister}
+        sessionNotice={sessionNotice}
       />
     );
   }
@@ -263,14 +289,16 @@ export default function App() {
         onCloseMobile={() => setMobileSidebarOpen(false)}
         onCollapseDesktop={() => setDesktopSidebarOpen(false)}
         reports={reports}
-        selectedReportId={activeReport?.id}
+        selectedReportId={activeView === 'workspace' ? activeReport?.id : null}
         onSelectReport={handleSelectReport}
         onNewAnalysis={handleNewAnalysis}
         onGoHome={handleGoHome}
+        onOpenAdmin={handleOpenAdmin}
+        isAdminView={activeView === 'admin'}
         onDeleteReport={handleDeleteReport}
         health={health}
         user={user}
-        onLogout={handleLogout}
+        onLogout={() => handleLogout(null)}
       />
 
       {/* Main Content Shell */}
@@ -278,7 +306,6 @@ export default function App() {
         {/* Sticky Topbar */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-[#F8FAFC]/85 px-4 backdrop-blur-md sm:px-6 dark:border-[#1F1F1F] dark:bg-[#000000]/85">
           <div className="flex items-center gap-2.5">
-            {/* Mobile drawer toggle */}
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(true)}
@@ -288,7 +315,6 @@ export default function App() {
               <Menu className="h-4 w-4" />
             </button>
 
-            {/* Desktop reopen sidebar toggle */}
             {!desktopSidebarOpen && (
               <button
                 type="button"
@@ -300,7 +326,6 @@ export default function App() {
               </button>
             )}
 
-            {/* Compact brand indicator when sidebar is collapsed or on mobile */}
             <button
               type="button"
               onClick={handleGoHome}
@@ -317,14 +342,23 @@ export default function App() {
               </span>
             </button>
 
-            {activeReport && (
+            {activeView === 'admin' ? (
               <div className="hidden items-center gap-2 text-xs text-slate-400 md:flex dark:text-zinc-500">
                 <span>/</span>
-                <span className="max-w-[260px] truncate font-medium text-slate-700 dark:text-zinc-300">
-                  {activeReport.input?.empresa || activeReport.input?.segmento} ·{' '}
-                  {activeReport.input?.setor}
+                <span className="font-medium text-violet-600 dark:text-violet-400">
+                  Painel Administrativo
                 </span>
               </div>
+            ) : (
+              activeReport && (
+                <div className="hidden items-center gap-2 text-xs text-slate-400 md:flex dark:text-zinc-500">
+                  <span>/</span>
+                  <span className="max-w-[260px] truncate font-medium text-slate-700 dark:text-zinc-300">
+                    {activeReport.input?.empresa || activeReport.input?.segmento} ·{' '}
+                    {activeReport.input?.setor}
+                  </span>
+                </div>
+              )
             )}
           </div>
 
@@ -332,7 +366,7 @@ export default function App() {
             <ThemeToggle isAmoled={isAmoled} onToggle={toggleTheme} />
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => handleLogout(null)}
               title={`Sair (${user.username})`}
               className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-rose-300 hover:text-rose-600 lg:hidden dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:text-zinc-300 dark:hover:border-rose-500/40 dark:hover:text-rose-400"
             >
@@ -343,7 +377,13 @@ export default function App() {
 
         {/* Scrollable Workspace */}
         <main className="industrial-grid-bg flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          {isAnalyzing ? (
+          {activeView === 'admin' && user.role === 'admin' ? (
+            <AdminPanel
+              currentUser={user}
+              health={health}
+              onBack={() => setActiveView('workspace')}
+            />
+          ) : isAnalyzing ? (
             <AnalysisLoader problemPreview={pendingProblem} />
           ) : isLoadingReport ? (
             <div className="mx-auto flex max-w-2xl items-center justify-center py-24">

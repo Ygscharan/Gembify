@@ -45,6 +45,43 @@ function registerFailure(ip) {
   }
 }
 
+function validatePasswordPolicy(password) {
+  const value = String(password || '');
+  const hasMinLength = value.length >= 6;
+  const hasUpper = /[A-Z]/.test(value);
+  const hasLower = /[a-z]/.test(value);
+  const hasSpecial = /[^A-Za-z0-9\s]/.test(value);
+
+  if (!hasMinLength || !hasUpper || !hasLower || !hasSpecial) {
+    return {
+      valid: false,
+      message:
+        'A senha deve ter no mínimo 6 caracteres, incluindo pelo menos 1 letra maiúscula, letras minúsculas e 1 caractere especial (ex: !@#$%&*).',
+    };
+  }
+  return { valid: true };
+}
+
+router.get('/check-username', async (req, res, next) => {
+  try {
+    const raw = String(req.query.username || '').trim();
+    if (!/^[a-zA-Z0-9._-]{3,30}$/.test(raw)) {
+      return res.json({
+        available: false,
+        reason: 'Use de 3 a 30 caracteres (letras, números, ponto, _ ou -).',
+      });
+    }
+
+    const existing = await userRepository.findByUsername(raw);
+    return res.json({
+      available: !existing,
+      reason: existing ? 'Este nome de usuário já está em uso.' : null,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.post('/register', async (req, res, next) => {
   try {
     const { name = '', username = '', email = '', password = '' } = req.body || {};
@@ -72,9 +109,10 @@ router.post('/register', async (req, res, next) => {
       });
     }
 
-    if (cleanPassword.length < 6) {
+    const passwordCheck = validatePasswordPolicy(cleanPassword);
+    if (!passwordCheck.valid) {
       return res.status(400).json({
-        error: 'A senha precisa ter pelo menos 6 caracteres.',
+        error: passwordCheck.message,
       });
     }
 

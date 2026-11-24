@@ -101,6 +101,13 @@ export const api = {
     });
   },
 
+  checkUsername(username) {
+    return apiRequest(
+      `/auth/check-username?username=${encodeURIComponent(username)}`,
+      { skipAuth: true }
+    );
+  },
+
   getMe() {
     return apiRequest('/auth/me');
   },

@@ -33,21 +33,22 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Accept Android SDK licenses
+      - name: Accept Android SDK licenses and ensure SDK 36
         run: |
           SDK_MANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           if [ -x "$SDK_MANAGER" ]; then
             yes | "$SDK_MANAGER" --licenses > /dev/null 2>&1 || true
+            "$SDK_MANAGER" "platforms;android-36" "build-tools;36.0.0" || true
           fi
 
-      - name: Install frontend dependencies and build
+      - name: Install frontend dependencies, build and sync Capacitor
         working-directory: frontend
         env:
           VITE_API_URL: https://gembify.onrender.com/api
         run: |
           npm ci
           npm run build
-          npx cap copy android
+          npx cap sync android
 
       - name: Build Android APK
         working-directory: frontend/android

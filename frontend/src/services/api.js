@@ -18,15 +18,26 @@ export function setUnauthorizedHandler(handler) {
 
 export function getStoredToken() {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  // Limpa eventual token legado salvo em localStorage para garantir logout ao fechar o app
+  try {
+    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // Silencioso
+  }
+  return window.sessionStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
 export function setStoredToken(token) {
   if (typeof window === 'undefined') return;
-  if (token) {
-    window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
-  } else {
+  try {
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // Silencioso
+  }
+  if (token) {
+    window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+  } else {
+    window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   }
 }
 

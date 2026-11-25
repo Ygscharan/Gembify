@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { LogOut, Menu, PanelLeftOpen, Smartphone } from 'lucide-react';
 import {
   api,
@@ -19,10 +20,12 @@ import LoginScreen from './components/LoginScreen.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
 import CursorSpotlight from './components/CursorSpotlight.jsx';
 import UpdateNotifier from './components/UpdateNotifier.jsx';
+import SplashIntro from './components/SplashIntro.jsx';
 
 export default function App() {
   const { isAmoled, toggleTheme } = useTheme();
 
+  const [showSplash, setShowSplash] = useState(true);
   const [authChecking, setAuthChecking] = useState(true);
   const [user, setUser] = useState(null);
   const [sessionNotice, setSessionNotice] = useState(null);
@@ -82,6 +85,23 @@ export default function App() {
     setNewModalOpen(false);
     setMobileSidebarOpen(false);
     setSessionNotice(typeof notice === 'string' && notice ? notice : null);
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      clearStoredToken();
+    };
+    const handlePageHide = (event) => {
+      if (!event.persisted) {
+        clearStoredToken();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
   }, []);
 
   useEffect(() => {
@@ -286,7 +306,11 @@ export default function App() {
     }
   };
 
-  if (authChecking) {
+  const handleFinishSplash = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
+  if (authChecking && !showSplash) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8FAFC] text-slate-900 dark:bg-[#000000] dark:text-zinc-100">
         <GembifyMark size="xl" />
@@ -300,6 +324,9 @@ export default function App() {
   if (!user) {
     return (
       <>
+        <AnimatePresence>
+          {showSplash && <SplashIntro onFinish={handleFinishSplash} />}
+        </AnimatePresence>
         <LoginScreen
           isAmoled={isAmoled}
           onToggleTheme={toggleTheme}

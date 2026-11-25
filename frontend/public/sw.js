@@ -26,8 +26,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  // Nunca faz cache de chamadas de API
-  if (url.pathname.startsWith('/api')) return;
+  // Nunca faz cache de chamadas de API nem do manifesto de versão
+  if (url.pathname.startsWith('/api') || url.pathname === '/version.json') return;
 
   // Network-first com fallback de cache para manter o app sempre atualizado
   event.respondWith(

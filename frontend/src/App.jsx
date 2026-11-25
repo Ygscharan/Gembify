@@ -18,6 +18,7 @@ import GembifyMark from './components/GembifyMark.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
 import CursorSpotlight from './components/CursorSpotlight.jsx';
+import UpdateNotifier from './components/UpdateNotifier.jsx';
 
 export default function App() {
   const { isAmoled, toggleTheme } = useTheme();
@@ -298,15 +299,18 @@ export default function App() {
 
   if (!user) {
     return (
-      <LoginScreen
-        isAmoled={isAmoled}
-        onToggleTheme={toggleTheme}
-        onLoginSuccess={handleLogin}
-        onRegisterSuccess={handleRegister}
-        sessionNotice={sessionNotice}
-        canInstallApp={Boolean(deferredInstallPrompt)}
-        onInstallApp={handleInstallApp}
-      />
+      <>
+        <LoginScreen
+          isAmoled={isAmoled}
+          onToggleTheme={toggleTheme}
+          onLoginSuccess={handleLogin}
+          onRegisterSuccess={handleRegister}
+          sessionNotice={sessionNotice}
+          canInstallApp={Boolean(deferredInstallPrompt)}
+          onInstallApp={handleInstallApp}
+        />
+        <UpdateNotifier />
+      </>
     );
   }
 
@@ -464,6 +468,8 @@ export default function App() {
         onClose={() => setNewModalOpen(false)}
         onConfirm={handleConfirmNewConsultation}
       />
+
+      <UpdateNotifier />
     </div>
   );
 }

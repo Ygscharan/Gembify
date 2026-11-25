@@ -4,10 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'frontend/android/**'
-      - 'frontend/capacitor.config.json'
+      - 'frontend/**'
       - '.github/workflows/build-android-apk.yml'
   workflow_dispatch:
+
+concurrency:
+  group: gembify-android-apk
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -50,6 +53,14 @@ jobs:
           npm run build
           npx cap sync android
 
+      - name: Read brief release summary
+        id: meta
+        run: |
+          SUMMARY=$(node -e "const v = JSON.parse(require('fs').readFileSync('frontend/dist/version.json', 'utf8')); console.log(v.summary);")
+          VERSION=$(node -e "const v = JSON.parse(require('fs').readFileSync('frontend/dist/version.json', 'utf8')); console.log(v.version);")
+          echo "summary=${SUMMARY}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: Build Android APK
         working-directory: frontend/android
         run: |
@@ -67,10 +78,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
-          name: Gembify Android App
+          name: "Gembify Android App (${{ steps.meta.outputs.version }})"
           body: |
-            Aplicativo Android nativo do **Gembify** (tela cheia, sem barra de navegador).
-            Baixe e instale o arquivo `Gembify.apk` no seu celular Android.
+            **Novidades desta atualização:**
+            ${{ steps.meta.outputs.summary }}
+
+            Baixe e instale `Gembify.apk` no seu Android.
           files: release-apk/Gembify.apk
           make_latest: true
         env:

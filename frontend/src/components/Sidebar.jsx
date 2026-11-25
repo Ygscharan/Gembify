@@ -375,7 +375,11 @@ export default function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: -300 }}
               transition={{ type: 'spring', stiffness: 360, damping: 34 }}
-              className="relative z-10 h-full w-80 max-w-[85vw] border-r border-slate-200 shadow-2xl dark:border-[#1F1F1F]"
+              style={{
+                paddingTop: 'var(--app-safe-top, 0px)',
+                paddingBottom: 'var(--app-safe-bottom, 0px)',
+              }}
+              className="relative z-10 h-full w-80 max-w-[85vw] border-r border-slate-200 bg-white shadow-2xl dark:border-[#1F1F1F] dark:bg-[#050505]"
             >
               <SidebarContent
                 reports={reports}

@@ -299,11 +299,20 @@ export default function LoginScreen({
     !isSubmitting;
 
   return (
-    <div className="industrial-grid-bg relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F8FAFC] px-4 py-10 text-slate-900 transition-colors duration-200 dark:bg-[#000000] dark:text-zinc-100">
+    <div
+      style={{
+        paddingTop: 'calc(var(--app-safe-top, 0px) + 2.5rem)',
+        paddingBottom: 'calc(var(--app-safe-bottom, 0px) + 2.5rem)',
+      }}
+      className="industrial-grid-bg relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F8FAFC] px-4 text-slate-900 transition-colors duration-200 dark:bg-[#000000] dark:text-zinc-100"
+    >
       <CursorSpotlight isAmoled={isAmoled} />
 
       {/* Top right theme switcher */}
-      <div className="fixed right-4 top-4 z-20 sm:right-6 sm:top-6">
+      <div
+        style={{ top: 'calc(var(--app-safe-top, 0px) + 1rem)' }}
+        className="fixed right-4 z-20 sm:right-6"
+      >
         <ThemeToggle isAmoled={isAmoled} onToggle={onToggleTheme} />
       </div>
 

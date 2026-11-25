@@ -335,7 +335,10 @@ export default function App() {
       {/* Main Content Shell */}
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         {/* Sticky Topbar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-[#F8FAFC]/85 px-4 backdrop-blur-md sm:px-6 dark:border-[#1F1F1F] dark:bg-[#000000]/85">
+        <header
+          style={{ paddingTop: 'var(--app-safe-top, 0px)' }}
+          className="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-slate-200/80 bg-[#F8FAFC]/90 px-4 py-2 backdrop-blur-md sm:px-6 dark:border-[#1F1F1F] dark:bg-[#000000]/95"
+        >
           <div className="flex items-center gap-2.5">
             <button
               type="button"
@@ -417,7 +420,10 @@ export default function App() {
         </header>
 
         {/* Scrollable Workspace */}
-        <main className="industrial-grid-bg flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main
+          style={{ paddingBottom: 'calc(var(--app-safe-bottom, 0px) + 1.5rem)' }}
+          className="industrial-grid-bg flex-1 px-4 py-6 sm:px-6 lg:px-8"
+        >
           {activeView === 'admin' && user.role === 'admin' ? (
             <AdminPanel
               currentUser={user}
